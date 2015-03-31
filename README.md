@@ -153,7 +153,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
   id="lx09df27"
   to="groupchat.shakespeare.lit"
   type="get">
-  <query xmlns="http://jabber.org/protocol/groupchat#info">
+  <query xmlns="http://jabber.org/protocol/groupchat#groupinfo">
     <property name="name" value="The Group Name" />
   </query>
 </iq>
@@ -164,7 +164,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
   id="lx09df27"
   to="hag66@shakespeare.lit/pda"
   type="result">
-  <query xmlns="http://jabber.org/protocol/groupchat#info">
+  <query xmlns="http://jabber.org/protocol/groupchat#groupinfo">
     <item jid="groupid@groupchat.shakespeare.lit"
       id="groupid"
       name="Group Name"
@@ -179,7 +179,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
   id="lx09df27"
   to="hag66@shakespeare.lit/pda"
   type="result">
-  <query xmlns="http://jabber.org/protocol/groupchat#info">
+  <query xmlns="http://jabber.org/protocol/groupchat#groupinfo">
     <error by="groupchat.shakespeare.lit" type="cancel">
       <not-exists xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
     </error>
@@ -191,7 +191,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
 <presence
     from="crone1@shakespeare.lit/desktop"
     to="groupid@groupchat.shakespeare.lit">
-    <x xmlns="http://jabber.org/protocol/groupchat"/>
+    <x xmlns="http://jabber.org/protocol/groupchat#creategroup"/>
     <properties>
       <property name="name">the group name</property>
       <property name="members">
@@ -203,35 +203,26 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
     </properties>
 </presence>
 ```
-* 如果创建成果返回群组信息包括成员信息
+* 广播群组信息给每一个群组成员
 ```xml
 <presence
   from="groupid@groupchat.shakespeare.lit"
   to="crone1@shakespeare.lit/desktop">
-  <x xmlns="http://jabber.org/protocol/groupchat"/>
+  <x xmlns="http://jabber.org/protocol/groupchat#creategroup"/>
   <properties>
-    <property name="name" value="the group name" type="text" />
-    <property name="groupid" value="group-uuid" type="text" />
-    <property name="members" type="array">
-      <item jid="someone@shakespeare.lit/pda"
-        nick="nick name"
-        mid="memberid"
-        role="member" />
-      <item jid="crone1@shakespeare.lit/desktop"
-        nick="nick name"
-        mid="memberid"
-        role="owner" />
-    </property>
+    <property name="name">the group name</property>
+    <property name="id">groupid</property>
   </properties>
 </presence>
 ```
+
 * 如果创建失败返回错误码
 ```xml
 <presence
     from="groupid@groupchat.shakespeare.lit/thirdwitch"
     to="hag66@shakespeare.lit/pda"
     type="error">
-    <x xmlns="http://jabber.org/protocol/groupchat"/>
+    <x xmlns="http://jabber.org/protocol/groupchat#creategroup"/>
     <error by="groupid@groupchat.shakespeare.lit" type="cancel">
         <not-allowed xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
     </error>
@@ -244,7 +235,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
 <presence
   from="crone1@shakespeare.lit/desktop"
   to="groupid@groupchat.shakespeare.lit">
-  <x xmlns="http://jabber.org/protocol/groupchat#groupupdate"/>
+  <x xmlns="http://jabber.org/protocol/groupchat#updategroup"/>
   <properties>
     <property name="name">the group name</property>
   </properties>
@@ -255,8 +246,11 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
 <presence
   from="groupid@groupchat.shakespeare.lit"
   to="crone1@shakespeare.lit/desktop">
-  <x xmlns="http://jabber.org/protocol/groupchat#groupupdate"/>
-  <success xmlns="" />
+  <x xmlns="http://jabber.org/protocol/groupchat#updategroup"/>
+  <properties>
+    <property name="name">the group name</property>
+    <property name="id">groupid</property>
+  </properties>
 </presence>
 ```
 并且群组内广播改变
@@ -264,7 +258,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
 <presence
   from="groupid@groupchat.shakespeare.lit"
   to="crone1@shakespeare.lit/desktop">
-  <x xmlns="http://jabber.org/protocol/groupchat#groupupdate"/>
+  <x xmlns="http://jabber.org/protocol/groupchat#updategroup"/>
   <properties>
     <property name="name">the group name</property>
   </properties>
@@ -276,32 +270,146 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
   from="groupid@groupchat.shakespeare.lit/thirdwitch"
   to="hag66@shakespeare.lit/pda"
   type="error">
-  <x xmlns="http://jabber.org/protocol/groupchat"/>
+  <x xmlns="http://jabber.org/protocol/groupchat#updategroup"/>
+  <error by="groupid@groupchat.shakespeare.lit" type="cancel">
+    <not-allowed xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
+  </error>
+</presence>
+```
+##删除群组
+* 请求删除指定群组
+```xml
+<presence
+  from="crone1@shakespeare.lit/desktop"
+  to="groupid@groupchat.shakespeare.lit">
+  <x xmlns="http://jabber.org/protocol/groupchat#deletegroup"/>
+</presence>
+```
+* 通知所有群成员注销指定的群
+```xml
+<presence
+  from="groupid@groupchat.shakespeare.lit"
+  to="crone1@shakespeare.lit/desktop">
+  <x xmlns="http://jabber.org/protocol/groupchat#deletegroup"/>
+</presence>
+```
+* 删除失败就直接返回错误
+```xml
+<presence
+  from="groupid@groupchat.shakespeare.lit/thirdwitch"
+  to="hag66@shakespeare.lit/pda"
+  type="error">
+  <x xmlns="http://jabber.org/protocol/groupchat#groupdelete"/>
+  <error by="groupid@groupchat.shakespeare.lit" type="cancel">
+    <not-allowed xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
+  </error>
+</presence>
+```
+##添加成员
+* 请求添加指定成员到指定群组
+```xml
+<presence
+  from="crone1@shakespeare.lit/desktop"
+  to="groupid@groupchat.shakespeare.lit">
+  <x xmlns="http://jabber.org/protocol/groupchat#addmember"/>
+
+  <item jid="crone1@shakespeare.lit/desktop"
+    nick="nick name"
+    mid="memberid"
+    role="owner" />
+</presence>
+```
+* 通知所有群成员添加新成员
+```xml
+<presence
+  from="groupid@groupchat.shakespeare.lit"
+  to="crone1@shakespeare.lit/desktop">
+  <x xmlns="http://jabber.org/protocol/groupchat#addmember"/>
+
+  <item jid="crone1@shakespeare.lit/desktop"
+    nick="nick name"
+    mid="memberid"
+    role="owner" />
+</presence>
+```
+* 添加失败就直接返回错误
+```xml
+<presence
+  from="groupid@groupchat.shakespeare.lit/thirdwitch"
+  to="hag66@shakespeare.lit/pda"
+  type="error">
+  <x xmlns="http://jabber.org/protocol/groupchat#groupdelete"/>
+  <error by="groupid@groupchat.shakespeare.lit" type="cancel">
+    <not-allowed xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
+  </error>
+</presence>
+```
+##删除成员
+* 请求删除指定成员到指定群组
+```xml
+<presence
+  from="crone1@shakespeare.lit/desktop"
+  to="groupid@groupchat.shakespeare.lit">
+  <x xmlns="http://jabber.org/protocol/groupchat#addmember"/>
+
+  <item jid="crone1@shakespeare.lit/desktop"
+    nick="nick name"
+    mid="memberid"
+    role="owner" />
+</presence>
+```
+* 通知所有群成员删除成员
+```xml
+<presence
+  from="groupid@groupchat.shakespeare.lit"
+  to="crone1@shakespeare.lit/desktop">
+  <x xmlns="http://jabber.org/protocol/groupchat#addmember"/>
+
+  <item jid="crone1@shakespeare.lit/desktop"
+    nick="nick name"
+    mid="memberid"
+    role="owner" />
+</presence>
+```
+* 删除失败就直接返回错误
+```xml
+<presence
+  from="groupid@groupchat.shakespeare.lit/thirdwitch"
+  to="hag66@shakespeare.lit/pda"
+  type="error">
+  <x xmlns="http://jabber.org/protocol/groupchat#groupdelete"/>
   <error by="groupid@groupchat.shakespeare.lit" type="cancel">
     <not-allowed xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
   </error>
 </presence>
 ```
 
-##删除群组
-##添加成员
-##删除成员
 ##成员用例
 ##发送群组消息
+* 用户发给群组组件
 ```xml
 <message
-    from="hag66@shakespeare.lit/pda"
-    id="hysf1v37"
-    to="groupid@groupchat.shakespeare.lit"
-    type="groupchat">
-    <body>Harpier cries: "tis time, "tis time.</body>
+  from="hag66@shakespeare.lit/pda"
+  id="hysf1v37"
+  to="groupid@groupchat.shakespeare.lit"
+  type="groupchat">
+  <body>Harpier cries: "tis time, "tis time.</body>
 </message>
 ```
-
-
+* 群组组件分发给所有成员
 ```xml
 <message
-    from="groupid@groupchat.shakespeare.lit/nickname"
+  from="groupid@groupchat.shakespeare.lit/memberid"
+  id="hysf1v37"
+  to="hag66@shakespeare.lit/pda"
+  type="groupchat">
+  <body>Harpier cries: "tis time, "tis time.</body>
+</message>
+```
+* 成员收到消息,反馈给发送者
+```xml
+<message
+    from="groupid@groupchat.shakespeare.lit/memberid"
     to="hag66@shakespeare.lit/pda"
     type="groupchat">
     <read xmlns="http://jabber.org/protocol/chatstates"/>
@@ -323,7 +431,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
 * 群组组件分发给所有成员
 ```xml
 <message
-  from="groupid@groupchat.shakespeare.lit/nickname"
+  from="groupid@groupchat.shakespeare.lit/memberid"
   id="hysf1v37"
   to="hag66@shakespeare.lit/pda"
   type="groupchat">
@@ -334,7 +442,7 @@ XEP-0045所实现的是传统的聊天室协议，该协议在移动终端存在
 * 成员收到消息,反馈给发送者
 ```xml
 <message
-  from="groupid@groupchat.shakespeare.lit/nickname"
+  from="groupid@groupchat.shakespeare.lit/memberid"
   to="hag66@shakespeare.lit/pda"
   type="groupchat">
   <read xmlns="http://jabber.org/protocol/chatstates"/>
